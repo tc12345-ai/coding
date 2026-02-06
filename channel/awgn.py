@@ -21,27 +21,47 @@ class AWGNChannel:
         received = channel.transmit(symbols)
     """
     
-    def __init__(self, snr_db: float = 10.0):
+    def __init__(self, snr_db: float = 10.0,
+                 bits_per_symbol: int = 1,
+                 code_rate: float = 1.0,
+                 symbol_energy: float = 1.0):
         """
         初始化 AWGN 信道
         
         Args:
             snr_db: 信噪比 (dB)，基于 Eb/N0
+            bits_per_symbol: 每个符号携带的比特数
+            code_rate: 码率 (k/n)
+            symbol_energy: 符号能量 (默认 1.0)
         """
         self.snr_db = snr_db
+        self.bits_per_symbol = bits_per_symbol
+        self.code_rate = code_rate
+        self.symbol_energy = symbol_energy
         self._update_noise_power()
         
     def _update_noise_power(self):
         """根据 SNR 更新噪声功率"""
         # SNR = Eb/N0 (dB)
-        # 对于 BPSK：Es = Eb, 所以 sigma^2 = N0/2 = Es / (2 * SNR_linear)
+        # Es/N0 = Eb/N0 * bits_per_symbol / code_rate
+        # sigma^2 = Es / (2 * Es/N0)
         snr_linear = 10 ** (self.snr_db / 10)
-        self.noise_variance = 1.0 / (2 * snr_linear)
+        esn0_linear = snr_linear * (self.bits_per_symbol / self.code_rate)
+        self.noise_variance = self.symbol_energy / (2 * esn0_linear)
         self.noise_std = np.sqrt(self.noise_variance)
         
-    def set_snr(self, snr_db: float):
+    def set_snr(self, snr_db: float,
+                bits_per_symbol: int = None,
+                code_rate: float = None,
+                symbol_energy: float = None):
         """设置新的 SNR"""
         self.snr_db = snr_db
+        if bits_per_symbol is not None:
+            self.bits_per_symbol = bits_per_symbol
+        if code_rate is not None:
+            self.code_rate = code_rate
+        if symbol_energy is not None:
+            self.symbol_energy = symbol_energy
         self._update_noise_power()
         
     def transmit(self, symbols: np.ndarray) -> np.ndarray:

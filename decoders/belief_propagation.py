@@ -104,11 +104,11 @@ class BeliefPropagationDecoder:
                     for k in neighbors:
                         if k != j:
                             # tanh(x/2) 用于数值稳定性
-                            msg = var_to_check[(i, k)]
-                            product *= np.tanh(msg / 2 + 1e-10)
+                            msg = np.clip(var_to_check[(i, k)], -50.0, 50.0)
+                            product *= np.tanh(msg / 2)
                             
                     # 限制范围避免数值问题
-                    product = np.clip(product, -0.9999999, 0.9999999)
+                    product = np.clip(product, -1 + 1e-12, 1 - 1e-12)
                     check_to_var[(i, j)] = 2 * np.arctanh(product)
                     
             # 变量节点更新 (Variable Node Update)
