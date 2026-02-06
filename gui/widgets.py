@@ -290,12 +290,14 @@ class SimulationThread(QThread):
                 encoder = ConvolutionalEncoder(K, gens)
                 decoder = ViterbiDecoder(K, gens)
                 block_size = 100
+                code_rate = encoder.rate
             else:
                 n, k = params['ldpc_n'], params['ldpc_k']
                 ldpc = LDPCCode(n, k, seed=params['seed'])
                 encoder = ldpc
                 decoder = BeliefPropagationDecoder(ldpc.H, params['bp_max_iter'])
                 block_size = k
+                code_rate = ldpc.rate
                 
             # 调制器
             if params['modulation'] == 'BPSK':
@@ -326,7 +328,11 @@ class SimulationThread(QThread):
                 if self._stop:
                     break
                     
-                channel.set_snr(snr_db)
+                channel.set_snr(
+                    snr_db,
+                    bits_per_symbol=modulator.bits_per_symbol,
+                    code_rate=code_rate
+                )
                 ber_calc = BERCalculator()
                 bler_calc = BLERCalculator()
                 iteration_sum = 0
